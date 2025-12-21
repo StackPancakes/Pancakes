@@ -91,14 +91,6 @@ static std::unordered_map<std::string_view, TokenType, CaseInsensitiveHash, Case
 
 class Lexer
 {
-private:
-    std::vector<Token> tokenization;
-    std::string input;
-    size_t position;
-    size_t line;
-    size_t column;
-    char current_char;
-
 public:
     Lexer(std::string const& source) : input{ source }, position{ 0 }, line{ 1 }, column{ 1 } 
     {
@@ -230,4 +222,11 @@ private:
         current_char = eof() ? '\0' : input[position];
     }
     bool eof() const { return position >= input.length(); }
+
+    std::vector<Token> tokenization;
+    std::string input;
+    size_t position;
+    size_t line;
+    size_t column;
+    char current_char;
 };
