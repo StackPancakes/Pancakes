@@ -1,0 +1,30 @@
+procedure Foo is
+local
+    integer
+    {
+        I
+        a
+        b
+        top_y
+        top_x
+        H
+    }
+do
+    for I in 1 ... 10 loop
+        x <- 3
+        y <- I
+    end loop
+
+    a <- pop integer
+    b <- pop integer
+    integer <- a + b
+
+    top_y <- pop integer
+    top_x <- pop integer
+
+    leave H from integer
+
+    H <- new integer(-2 ... 2)
+    H(0) <- a + b
+    delete H
+end procedure

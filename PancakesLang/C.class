@@ -1,0 +1,7 @@
+@include "vars.section"
+@include "manual.block"
+@include "struct.k"
+@include "methods.section"
+
+class C
+end class

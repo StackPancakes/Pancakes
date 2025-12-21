@@ -1,0 +1,4 @@
+lowlevel
+do
+    @include "../forth/block.forth"
+end

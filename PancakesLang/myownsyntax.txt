@@ -1,0 +1,58 @@
+class C
+section variable
+    integer 
+    {
+        x
+        y
+        z
+    }
+
+    manual do
+        D : integer pinned allocate sizeof integer
+        B : integer allocate cells 4    -- manually stack allocated
+    end manual
+
+section function
+    procedure Foo as main is
+    local
+        integer
+        {
+            I
+            a
+            b
+            top_y
+            top_x
+            H
+        }
+    do
+        for I in 1 ... 10 loop
+            x <- 3
+            y <- I
+        end loop
+
+        destroy I -- destroy I from stack, overwriting it to 0
+
+        temp <- pop integer + a + b
+        push temp -- now stacked in integer stack
+
+        top_y <- pop integer -- pop from L
+        top_x <- pop integer -- pop from top_y
+        -- top_y no longer exist.
+
+        pin H -- H is now independent variable. can be stack storage variable or heap
+
+        H <- new integer(-2 ... 2)
+        H(0) <- a + b;
+        delete H -- deallocate H (dangled)
+    end procedure
+
+    lowlevel
+    do
+        forth
+            10 20 +
+            x !
+            y @ 5 +
+            z !
+        end forth
+    end
+end class

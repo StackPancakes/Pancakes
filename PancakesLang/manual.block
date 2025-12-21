@@ -1,0 +1,4 @@
+section variable
+    manual do
+        B : allocate cells 4
+    end manual

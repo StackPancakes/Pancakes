@@ -1,0 +1,4 @@
+section method
+    @include "subroutines/foo.sub"
+    @include "subroutines/lowlevel.sub"
+end section

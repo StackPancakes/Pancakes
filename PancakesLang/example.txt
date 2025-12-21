@@ -1,0 +1,11 @@
+class Pancakes
+section features
+    IO, only: print_line
+
+section method
+    function foo as main return integer is
+    do
+        print('hi')
+        return success
+    end function
+end class

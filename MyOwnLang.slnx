@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="PancakesLang/PancakesLang.vcxproj" Id="89b22c82-08e3-4a41-a9c4-3dcd905a89f6" />
+</Solution>
