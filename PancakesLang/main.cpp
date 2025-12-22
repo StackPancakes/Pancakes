@@ -2,6 +2,11 @@
 #include <vector>
 #include <iostream>
 #include <unordered_map>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+
+namespace fs = std::filesystem;
 
 enum class TokenType
 {
@@ -34,6 +39,41 @@ enum class TokenType
     UNKNOWN
 };
 
+constexpr std::string_view TokenTypeToString(TokenType type)
+{
+    switch (type)
+    {
+    case TokenType::IDENTIFIER: return "IDENTIFIER";
+    case TokenType::STRING: return "STRING";
+    case TokenType::NUMBER: return "NUMBER";
+
+    case TokenType::K_SECTION: return "K_SECTION";
+    case TokenType::K_END: return "K_END";
+    case TokenType::K_FUNCTION: return "K_FUNCTION";
+    case TokenType::K_CLASS: return "K_CLASS";
+    case TokenType::K_ONLY: return "K_ONLY";
+    case TokenType::K_AS: return "K_AS";
+    case TokenType::K_RETURN: return "K_RETURN";
+    case TokenType::K_MAIN: return "K_MAIN";
+    case TokenType::K_DO: return "K_DO";
+    case TokenType::K_IS: return "K_IS";
+
+    case TokenType::COMMA: return "COMMA";
+    case TokenType::COLON: return "COLON";
+    case TokenType::SEMICOLON: return "SEMICOLON";
+    case TokenType::LPAREN: return "LPAREN";
+    case TokenType::RPAREN: return "RPAREN";
+    case TokenType::DOT: return "DOT";
+    case TokenType::EQUAL: return "EQUAL";
+    case TokenType::PLUS: return "PLUS";
+    case TokenType::MINUS: return "MINUS";
+
+    case TokenType::END_OF_FILE: return "END_OF_FILE";
+    case TokenType::UNKNOWN: return "UNKNOWN";
+    }
+    return "UNKNOWN";
+}
+
 struct SourceLocation
 {
     size_t line;
@@ -45,7 +85,7 @@ struct Token
 {
     TokenType type;
     std::string value;
-    SourceLocation error;
+    SourceLocation position;
 };
 
 struct CaseInsensitiveHash
@@ -83,6 +123,7 @@ static std::unordered_map<std::string_view, TokenType, CaseInsensitiveHash, Case
     { "section", TokenType::K_SECTION },
     { "function", TokenType::K_FUNCTION },
     { "as", TokenType::K_AS },
+    { "main", TokenType::K_MAIN },
     { "return", TokenType::K_RETURN },
     { "is", TokenType::K_IS },
     { "do", TokenType::K_DO },
@@ -91,6 +132,13 @@ static std::unordered_map<std::string_view, TokenType, CaseInsensitiveHash, Case
 
 class Lexer
 {
+    std::vector<Token> tokenization;
+    std::string input;
+    size_t position;
+    size_t line;
+    size_t column;
+    char current_char;
+
 public:
     Lexer(std::string const& source) : input{ source }, position{ 0 }, line{ 1 }, column{ 1 } 
     {
@@ -121,6 +169,7 @@ public:
         case '(': advance(); return Token{ TokenType::LPAREN, "(", {line, column} };
         case ')': advance(); return Token{ TokenType::RPAREN, ")", {line, column} };
         case ':': advance(); return Token{ TokenType::COLON, ":", {line, column} };
+        case ',': advance(); return Token{ TokenType::COMMA, ",", {line, column} };
         default:
             advance();
             return Token{ TokenType::UNKNOWN, std::string(1, current_char), {line, column} };
@@ -141,6 +190,7 @@ public:
     }
 
 private:
+
     void skipWhitespace()
     {
         while (!eof() && (current_char == ' ' || current_char == '\t' || current_char == '\n'))
@@ -160,9 +210,9 @@ private:
         }
 
         if (auto it{ keywords.find(value) }; it != keywords.end())
-            return Token{ it->second, value, { line, column } };
+            return Token{ it->second, value, { start_line, start_col } };
 
-        return Token{ TokenType::IDENTIFIER, value, { line, column } };
+        return Token{ TokenType::IDENTIFIER, value, { start_line, start_col } };
     }
 
     // no comment yet
@@ -206,7 +256,6 @@ private:
         return { TokenType::NUMBER, value, { start_line, start_col } };
     }
 
-private:
     void advance() 
     { 
         if (current_char == '\n')
@@ -221,12 +270,46 @@ private:
 
         current_char = eof() ? '\0' : input[position];
     }
+
     bool eof() const { return position >= input.length(); }
 
-    std::vector<Token> tokenization;
-    std::string input;
-    size_t position;
-    size_t line;
-    size_t column;
-    char current_char;
+ public:
+     friend std::ostream& operator<<(std::ostream& out, Lexer const& other)
+     {
+         Lexer copy{ other };
+
+         for (Token const& tok : copy.tokenize())
+             out << "Token Type: <" << TokenTypeToString(tok.type)
+             << "> Word: \"" << tok.value << "\" Position: { Line: " << tok.position.line
+             << ", Column: " << tok.position.column << " }\n";
+
+         return out;
+     }
 };
+
+int main(int const argc, char* argv[])
+{
+    if (argc != 2)
+    {
+        std::cerr << "Usage: pancakesC <file.cakes>\n";
+        return 64;
+    }
+
+    fs::path file{ argv[1] };
+    if (file.is_relative())
+        file = fs::weakly_canonical(file);
+
+    std::ifstream reader{ file };
+    if (!reader)
+    {
+        std::cerr << "Error: failed to open " << file << " for reading\n";
+        return 1;
+    }
+
+    std::ostringstream stream;
+    stream << reader.rdbuf();
+    std::string buffer{ stream.str() };
+
+    Lexer lexer{ buffer };
+    std::cout << lexer << '\n';
+}
