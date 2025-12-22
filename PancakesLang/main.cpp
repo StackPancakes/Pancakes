@@ -297,7 +297,16 @@ int main(int const argc, char* argv[])
 
     fs::path file{ argv[1] };
     if (file.is_relative())
-        file = fs::weakly_canonical(file);
+    {
+        try
+        {
+            file = fs::canonical(file);
+        }
+        catch (std::exception const& ex)
+        {
+            std::cerr << "Couldn't find " << file << '\n';
+        }
+    }
 
     std::ifstream reader{ file };
     if (!reader)
