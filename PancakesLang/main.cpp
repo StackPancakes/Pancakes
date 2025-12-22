@@ -266,7 +266,9 @@ private:
         else
             ++column;
 
-        current_char = eof() ? '\0' : input[++position];
+        ++position;
+
+        current_char = eof() ? '\0' : input[position];
     }
 
     bool eof() const { return position >= input.length(); }
