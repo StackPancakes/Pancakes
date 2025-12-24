@@ -143,6 +143,7 @@
   <ItemGroup>
     <Text Include="example.txt" />
     <Text Include="myownsyntax.txt" />
+    <Text Include="smallerexample.cakes" />
     <Text Include="syntaxerrorexample.txt" />
   </ItemGroup>
   <ItemGroup>
