@@ -35,8 +35,15 @@ enum class TokenType
     PLUS,
     MINUS,
 
+    UNTERMINATED_STRING,
     END_OF_FILE,
     UNKNOWN
+};
+
+enum class BlockKind
+{
+    FUNCTION,
+    CLASS
 };
 
 constexpr std::string_view TokenTypeToString(TokenType type)
@@ -72,6 +79,15 @@ constexpr std::string_view TokenTypeToString(TokenType type)
     case TokenType::UNKNOWN: return "UNKNOWN";
     }
     return "UNKNOWN";
+}
+
+constexpr std::string_view BlockKindToString(BlockKind kind)
+{
+    switch (kind)
+    {
+    case BlockKind::FUNCTION: "FUNCTION";
+    case BlockKind::CLASS: "CLASS";
+    }
 }
 
 struct SourceLocation
@@ -155,28 +171,37 @@ public:
         if (eof())
             return Token{ TokenType::END_OF_FILE, "", { line, column } };
 
-        if (std::isalpha(current_char) || current_char == '_')
+        if (std::isalpha(static_cast<unsigned char>(current_char)) || current_char == '_')
             return identifier();
 
-        if (std::isdigit(current_char))
+        if (std::isdigit(static_cast<unsigned char>(current_char)))
             return number();
 
         if (current_char == '"' || current_char == '\'')
             return stringLiteral();
 
-        switch (current_char)
+        size_t start_line{ line };
+        size_t start_col{ column };
+        char ch{ current_char };
+
+        advance();
+
+        switch (ch)
         {
-        case '(': advance(); return Token{ TokenType::LPAREN, "(", {line, column} };
-        case ')': advance(); return Token{ TokenType::RPAREN, ")", {line, column} };
-        case ':': advance(); return Token{ TokenType::COLON, ":", {line, column} };
-        case ',': advance(); return Token{ TokenType::COMMA, ",", {line, column} };
-        default:
-            advance();
-            return Token{ TokenType::UNKNOWN, std::string(1, current_char), {line, column} };
+        case '(': return Token{ TokenType::LPAREN, "(", { start_line, start_col } };
+        case ')': return Token{ TokenType::RPAREN, ")", { start_line, start_col } };
+        case ':': return Token{ TokenType::COLON, ":", { start_line, start_col } };
+        case ',': return Token{ TokenType::COMMA, ",", { start_line, start_col } };
+        case ';': return Token{ TokenType::SEMICOLON, ";", { start_line, start_col } };
+        case '.': return Token{ TokenType::DOT, ".", { start_line, start_col } };
+        case '=': return Token{ TokenType::EQUAL, "=", { start_line, start_col } };
+        case '+': return Token{ TokenType::PLUS, "+", { start_line, start_col } };
+        case '-': return Token{ TokenType::MINUS, "-", { start_line, start_col } };
+        default:  return Token{ TokenType::UNKNOWN, std::string(1, ch), { start_line, start_col } };
         }
     }
 
-    std::vector<Token> tokenize()
+    std::vector<Token>& tokenize()
     {
         tokenization.clear();
         while (true)
@@ -189,11 +214,13 @@ public:
         return tokenization;
     }
 
+
 private:
 
     void skipWhitespace()
     {
-        while (!eof() && (current_char == ' ' || current_char == '\t' || current_char == '\n'))
+        while (!eof() && (current_char == ' ' || current_char == '\t' ||
+            current_char == '\n' || current_char == '\r'))
             advance();
     }
 
@@ -203,7 +230,7 @@ private:
         size_t start_line{ line };
         size_t start_col{ column };
 
-        while (!eof() && (std::isalnum(current_char) || current_char == '_'))
+        while (!eof() && (std::isalnum(static_cast<unsigned char>(current_char)) || current_char == '_'))
         {
             value += current_char;
             advance();
@@ -220,40 +247,42 @@ private:
     void skipComment();
     */
 
-    Token stringLiteral()
-    {
-        std::string value;
-        size_t start_line{ line };
-        size_t start_col{ column };
-
-        char quote_char{ current_char };
-        advance();
-
-        while (!eof() && current_char != quote_char)
-        {
-            value += current_char;
-            advance();
-        }
-
-        if (current_char == quote_char)
-            advance();
-
-        return Token{ TokenType::STRING, value, { start_line, start_col } };
-    }
-
     Token number()
     {
         std::string value;
         size_t start_line{ line };
         size_t start_col{ column };
 
-        while (!eof() && std::isdigit(current_char))
+        while (!eof() && std::isdigit(static_cast<unsigned char>(current_char)))
         {
             value += current_char;
             advance();
         }
 
         return { TokenType::NUMBER, value, { start_line, start_col } };
+    }
+
+
+    Token stringLiteral()
+    {
+        std::string value;
+        size_t start_line{ line };
+        size_t start_col{ column };
+        char quote{ current_char };
+
+        advance();
+
+        while (!eof() && current_char != quote)
+        {
+            value += current_char;
+            advance();
+        }
+
+        if (eof())
+            return Token{ TokenType::UNTERMINATED_STRING, value, { start_line, start_col } };
+
+        advance();
+        return Token{ TokenType::STRING, value, { start_line, start_col } };
     }
 
     void advance() 
@@ -267,7 +296,6 @@ private:
             ++column;
 
         ++position;
-
         current_char = eof() ? '\0' : input[position];
     }
 
@@ -280,11 +308,58 @@ private:
 
          for (Token const& tok : copy.tokenize())
              out << "Token Type: <" << TokenTypeToString(tok.type)
-             << "> Word: \"" << tok.value << "\" Position: { Line: " << tok.position.line
+             << "> Word: \"" << tok.value
+             << "\" Position: { Line: " << tok.position.line
              << ", Column: " << tok.position.column << " }\n";
 
          return out;
      }
+};
+
+class Parser
+{
+    Lexer lexer;
+
+public:
+    Parser(Lexer const& lex) : lexer{ lex } {}
+
+    bool isSyntaxError()
+    {
+        std::vector<Token> tokens{ lexer.tokenize() };
+        std::vector<BlockKind> block_stack;
+
+        for (size_t i{}; i < tokens.size(); ++i)
+        {
+            Token const& token{ tokens[i] };
+
+            if (token.type == TokenType::K_END)
+            {
+                if (block_stack.empty())
+                    return true;
+
+                if (i + 1 >= tokens.size())
+                    return true;
+
+                Token const& nextToken{ tokens[i + 1] };
+
+                if ((block_stack.back() == BlockKind::CLASS && nextToken.type != TokenType::K_CLASS)
+                    || (block_stack.back() == BlockKind::FUNCTION && nextToken.type != TokenType::K_FUNCTION))
+                    return true;
+
+                block_stack.pop_back();
+                ++i;
+                continue;
+            }
+
+            switch (token.type)
+            {
+            case TokenType::K_CLASS: block_stack.push_back(BlockKind::CLASS); break;
+            case TokenType::K_FUNCTION: block_stack.push_back(BlockKind::FUNCTION); break;
+            default: break;
+            }
+        }
+        return !block_stack.empty();
+    }
 };
 
 int main(int const argc, char* argv[])
@@ -302,7 +377,7 @@ int main(int const argc, char* argv[])
         {
             file = fs::canonical(file);
         }
-        catch (std::exception const& ex)
+        catch (std::exception const&)
         {
             std::cerr << "Couldn't find " << file << '\n';
         }
@@ -321,4 +396,6 @@ int main(int const argc, char* argv[])
 
     Lexer lexer{ buffer };
     std::cout << lexer << '\n';
+
+    Parser parse{ lexer };
 }
