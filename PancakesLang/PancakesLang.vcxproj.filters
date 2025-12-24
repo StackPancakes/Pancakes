@@ -58,6 +58,9 @@
     <Text Include="myownsyntax.txt">
       <Filter>Resource Files\Examples</Filter>
     </Text>
+    <Text Include="syntaxerrorexample.txt">
+      <Filter>Resource Files\Examples</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="parser.hpp">
