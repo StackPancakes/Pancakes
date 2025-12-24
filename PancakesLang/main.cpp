@@ -5,7 +5,8 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
-#include <optional>
+
+static bool isVerbose{};
 
 namespace fs = std::filesystem;
 
@@ -25,6 +26,7 @@ enum class TokenType
     K_MAIN,
     K_DO,
     K_IS,
+    K_PROCEDURE,
 
     COMMA,
     COLON,
@@ -44,6 +46,7 @@ enum class TokenType
 enum class BlockKind
 {
     FUNCTION,
+    PROCEDURE,
     CLASS
 };
 
@@ -65,6 +68,7 @@ constexpr std::string_view TokenTypeToString(TokenType type)
     case TokenType::K_MAIN: return "K_MAIN";
     case TokenType::K_DO: return "K_DO";
     case TokenType::K_IS: return "K_IS";
+    case TokenType::K_PROCEDURE: return "K_PROCEDURE";
 
     case TokenType::COMMA: return "COMMA";
     case TokenType::COLON: return "COLON";
@@ -76,6 +80,7 @@ constexpr std::string_view TokenTypeToString(TokenType type)
     case TokenType::PLUS: return "PLUS";
     case TokenType::MINUS: return "MINUS";
 
+    case TokenType::UNTERMINATED_STRING: return "UNTERMINATED_STRING";
     case TokenType::END_OF_FILE: return "END_OF_FILE";
     case TokenType::UNKNOWN: return "UNKNOWN";
     }
@@ -88,6 +93,7 @@ constexpr std::string_view BlockKindToString(BlockKind type)
     {
     case BlockKind::CLASS: return "CLASS";
     case BlockKind::FUNCTION: return "FUNCTION";
+    case BlockKind::PROCEDURE: return "PROCEDURE";
     }
     return "UNKNOWN";
 }
@@ -97,7 +103,6 @@ struct SourceLocation
     size_t line;
     size_t column;
 };
-
 
 struct Token
 {
@@ -153,6 +158,7 @@ static std::unordered_map<std::string_view, TokenType, CaseInsensitiveHash, Case
     { "class", TokenType::K_CLASS },
     { "section", TokenType::K_SECTION },
     { "function", TokenType::K_FUNCTION },
+    { "procedure", TokenType::K_PROCEDURE },
     { "as", TokenType::K_AS },
     { "main", TokenType::K_MAIN },
     { "return", TokenType::K_RETURN },
@@ -334,9 +340,10 @@ private:
 class Parser
 {
     Lexer lexer;
+    std::vector<Token> tokens;
 
 public:
-    Parser(Lexer const& lex) : lexer{ lex }
+    Parser(Lexer const& lex) : lexer{ lex }, tokens{ lexer.tokenize() }
     {
         auto syntaxErrors{ checkSyntax() };
         if (!syntaxErrors.empty())
@@ -348,14 +355,26 @@ public:
                     << " at Line: " << err.errorLocation.line
                     << ", Column: " << err.errorLocation.column << '\n';
             }
+            std::exit(1);
         }
-        else
+
+        if (isVerbose)
             std::cout << "Syntax is valid!\n";
+
+        try
+        {
+            visitMain();
+        }
+        catch (std::runtime_error const& e)
+        {
+            std::cerr << "[Runtime Error] " << e.what() << '\n';
+            std::exit(1);
+        }
     }
+
 
     std::vector<SyntaxError> checkSyntax()
     {
-        std::vector<Token> tokens{ lexer.tokenize() };
         std::vector<BlockInfo> block_stack;
         std::vector<SyntaxError> errors;
 
@@ -380,8 +399,14 @@ public:
                 Token const& nextToken{ tokens[i + 1] };
                 BlockInfo const& top{ block_stack.back() };
 
-                bool mismatch{ (top.kind == BlockKind::CLASS && nextToken.type != TokenType::K_CLASS)
-                    || (top.kind == BlockKind::FUNCTION && nextToken.type != TokenType::K_FUNCTION) };
+                bool mismatch{ false };
+
+                switch (top.kind)
+                {
+                case BlockKind::CLASS: mismatch = nextToken.type != TokenType::K_CLASS; break;
+                case BlockKind::FUNCTION: mismatch = nextToken.type != TokenType::K_FUNCTION; break;
+                case BlockKind::PROCEDURE: mismatch = nextToken.type != TokenType::K_PROCEDURE; break;
+                }
 
                 if (mismatch)
                     errors.push_back({ "Mismatched 'end' for " + std::string{ BlockKindToString(top.kind) } +
@@ -392,14 +417,29 @@ public:
                 continue;
             }
 
-            if (token.type == TokenType::K_CLASS || token.type == TokenType::K_FUNCTION)
+            switch (token.type)
+            {
+            case TokenType::K_CLASS:
+            case TokenType::K_FUNCTION:
+            case TokenType::K_PROCEDURE:
             {
                 std::string name{ "unknown" };
                 if (i + 1 < tokens.size() && tokens[i + 1].type == TokenType::IDENTIFIER)
                     name = tokens[i + 1].value;
 
-                block_stack.push_back({ token.type == TokenType::K_CLASS ? BlockKind::CLASS : BlockKind::FUNCTION,
-                    name, token.position });
+                BlockKind kind;
+                switch (token.type)
+                {
+                case TokenType::K_CLASS: kind = BlockKind::CLASS; break;
+                case TokenType::K_FUNCTION: kind = BlockKind::FUNCTION; break;
+                case TokenType::K_PROCEDURE: kind = BlockKind::PROCEDURE; break;
+                default: kind = BlockKind::FUNCTION; break;
+                }
+
+                block_stack.push_back({ kind, name, token.position });
+                break;
+            }
+            default: break;
             }
         }
         
@@ -413,18 +453,112 @@ public:
 
         return errors;
     }
-};
 
+    void visitMain()
+    {
+        size_t n{ tokens.size() };
+        bool foundMain{};
+        size_t isIndex{};
+
+        for (size_t i{}; i < n; ++i)
+        {
+            if (tokens[i].type != TokenType::K_PROCEDURE)
+                continue;
+
+            size_t j{ i + 1 };
+            if (j < n && tokens[j].type == TokenType::IDENTIFIER)
+                ++j;
+
+            if (j + 2 < n &&
+                tokens[j].type == TokenType::K_AS &&
+                tokens[j + 1].type == TokenType::K_MAIN &&
+                tokens[j + 2].type == TokenType::K_IS)
+            {
+                foundMain = true;
+                isIndex = j + 2;
+                break;
+            }
+        }
+
+        if (!foundMain)
+            throw std::runtime_error("main function/procedure doesn't exist");
+
+        size_t doIndex{ isIndex + 1 };
+        while (doIndex < n && tokens[doIndex].type != TokenType::K_DO)
+            ++doIndex;
+
+        if (doIndex >= n)
+            throw std::runtime_error("Expected 'do' after 'is' in main");
+
+        std::vector<Token> blockTokens;
+        int depth{ 1 };
+        size_t cur{ doIndex + 1 };
+
+        while (cur < n && depth > 0)
+        {
+            if (tokens[cur].type == TokenType::K_DO)
+                ++depth;
+            else if (tokens[cur].type == TokenType::K_END)
+                if (cur + 1 < n && tokens[cur + 1].type == TokenType::K_PROCEDURE)
+                    --depth;
+
+            if (depth > 0)
+                blockTokens.push_back(tokens[cur]);
+
+            ++cur;
+        }
+
+        for (size_t k{}; k < blockTokens.size(); ++k)
+        {
+            if (blockTokens[k].type == TokenType::IDENTIFIER &&
+                blockTokens[k].value == "print_line")
+            {
+                size_t argIndex{ k + 1 };
+
+                if (argIndex < blockTokens.size() && blockTokens[argIndex].type == TokenType::LPAREN)
+                    ++argIndex;
+
+                if (argIndex < blockTokens.size() && blockTokens[argIndex].type == TokenType::STRING)
+                {
+                    std::cout << blockTokens[argIndex].value << '\n';
+                    k = argIndex;
+                    if (k + 1 < blockTokens.size() && blockTokens[k + 1].type == TokenType::RPAREN)
+                        ++k;
+                }
+            }
+        }
+    }
+
+};
 
 int main(int const argc, char* argv[])
 {
-    if (argc != 2)
+    if (argc < 2)
     {
-        std::cerr << "Usage: pancakesC <file.cakes>\n";
+        std::cerr << "Usage: pancakesC [--verbose] <file.cakes>\n";
         return 64;
     }
 
-    fs::path file{ argv[1] };
+    std::string filePath;
+
+    for (int i{ 1 }; i < argc; ++i)
+    {
+        std::string arg{ argv[i] };
+
+        if (arg == "--verbose")
+            isVerbose = true;
+        else
+            filePath = arg;
+    }
+
+    if (filePath.empty())
+    {
+        std::cerr << "Error: No .cakes file provided\n";
+        std::cerr << "Usage: pancakesC [--verbose] <file.cakes>\n";
+        return 1;
+    }
+
+    fs::path file{ filePath };
     if (file.is_relative())
     {
         try
@@ -434,6 +568,7 @@ int main(int const argc, char* argv[])
         catch (std::exception const&)
         {
             std::cerr << "Couldn't find " << file << '\n';
+            return 1;
         }
     }
 
@@ -449,7 +584,9 @@ int main(int const argc, char* argv[])
     std::string buffer{ stream.str() };
 
     Lexer lexer{ buffer };
-    std::cout << lexer << '\n';
+
+    if (isVerbose)
+        std::cout << lexer << '\n';
 
     Parser parse{ lexer };
 }
