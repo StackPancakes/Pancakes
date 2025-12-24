@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <optional>
 
 namespace fs = std::filesystem;
 
@@ -81,13 +82,14 @@ constexpr std::string_view TokenTypeToString(TokenType type)
     return "UNKNOWN";
 }
 
-constexpr std::string_view BlockKindToString(BlockKind kind)
+constexpr std::string_view BlockKindToString(BlockKind type)
 {
-    switch (kind)
+    switch (type)
     {
-    case BlockKind::FUNCTION: "FUNCTION";
-    case BlockKind::CLASS: "CLASS";
+    case BlockKind::CLASS: return "CLASS";
+    case BlockKind::FUNCTION: return "FUNCTION";
     }
+    return "UNKNOWN";
 }
 
 struct SourceLocation
@@ -101,6 +103,19 @@ struct Token
 {
     TokenType type;
     std::string value;
+    SourceLocation position;
+};
+
+struct SyntaxError
+{
+    std::string message{};
+    SourceLocation errorLocation{};
+};
+
+struct BlockInfo
+{
+    BlockKind kind;
+    std::string name;
     SourceLocation position;
 };
 
@@ -321,46 +336,85 @@ class Parser
     Lexer lexer;
 
 public:
-    Parser(Lexer const& lex) : lexer{ lex } {}
+    Parser(Lexer const& lex) : lexer{ lex }
+    {
+        auto syntaxErrors{ checkSyntax() };
+        if (!syntaxErrors.empty())
+        {
+            std::cerr << "Syntax Errors found:\n";
+            for (auto const& err : syntaxErrors)
+            {
+                std::cerr << "- " << err.message
+                    << " at Line: " << err.errorLocation.line
+                    << ", Column: " << err.errorLocation.column << '\n';
+            }
+        }
+        else
+            std::cout << "Syntax is valid!\n";
+    }
 
-    bool isSyntaxError()
+    std::vector<SyntaxError> checkSyntax()
     {
         std::vector<Token> tokens{ lexer.tokenize() };
-        std::vector<BlockKind> block_stack;
+        std::vector<BlockInfo> block_stack;
+        std::vector<SyntaxError> errors;
 
-        for (size_t i{}; i < tokens.size(); ++i)
+        for (size_t i = 0; i < tokens.size(); ++i)
         {
-            Token const& token{ tokens[i] };
+            Token const& token = tokens[i];
 
             if (token.type == TokenType::K_END)
             {
                 if (block_stack.empty())
-                    return true;
+                {
+                    errors.push_back({ "Too many 'end' keywords", token.position });
+                    continue;
+                }
 
                 if (i + 1 >= tokens.size())
-                    return true;
+                {
+                    errors.push_back({ "'end' without following keyword", token.position });
+                    continue;
+                }
 
                 Token const& nextToken{ tokens[i + 1] };
+                BlockInfo const& top{ block_stack.back() };
 
-                if ((block_stack.back() == BlockKind::CLASS && nextToken.type != TokenType::K_CLASS)
-                    || (block_stack.back() == BlockKind::FUNCTION && nextToken.type != TokenType::K_FUNCTION))
-                    return true;
+                bool mismatch{ (top.kind == BlockKind::CLASS && nextToken.type != TokenType::K_CLASS)
+                    || (top.kind == BlockKind::FUNCTION && nextToken.type != TokenType::K_FUNCTION) };
+
+                if (mismatch)
+                    errors.push_back({ "Mismatched 'end' for " + std::string{ BlockKindToString(top.kind) } +
+                        " '" + top.name + "'", nextToken.position });
 
                 block_stack.pop_back();
                 ++i;
                 continue;
             }
 
-            switch (token.type)
+            if (token.type == TokenType::K_CLASS || token.type == TokenType::K_FUNCTION)
             {
-            case TokenType::K_CLASS: block_stack.push_back(BlockKind::CLASS); break;
-            case TokenType::K_FUNCTION: block_stack.push_back(BlockKind::FUNCTION); break;
-            default: break;
+                std::string name{ "unknown" };
+                if (i + 1 < tokens.size() && tokens[i + 1].type == TokenType::IDENTIFIER)
+                    name = tokens[i + 1].value;
+
+                block_stack.push_back({ token.type == TokenType::K_CLASS ? BlockKind::CLASS : BlockKind::FUNCTION,
+                    name, token.position });
             }
         }
-        return !block_stack.empty();
+        
+        while (!block_stack.empty())
+        {
+            BlockInfo const& top{ block_stack.back() };
+            errors.push_back({ "Missing 'end' for " + std::string{ BlockKindToString(top.kind) } +
+                " '" + top.name + "'", top.position });
+            block_stack.pop_back();
+        }
+
+        return errors;
     }
 };
+
 
 int main(int const argc, char* argv[])
 {
