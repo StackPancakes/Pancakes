@@ -2,6 +2,7 @@
 #include <cstring>
 #include <iostream> // printing only
 #include <fstream> // reading the file
+#include <limits>
 
 static bool isVerbose{};
 
@@ -277,6 +278,7 @@ private:
             if (std::strcmp(g_blockTokens[k].value, "print_line") == 0 && k + 2 < blockCount)
             {
                 outBuf->sputn(g_blockTokens[k + 2].value, static_cast<std::streamsize>(std::strlen(g_blockTokens[k + 2].value)));
+                outBuf->sputc('\n');
                 k += 3;
             }
         }
