@@ -18,10 +18,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="parser.cpp">
+    <ClCompile Include="main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -50,6 +47,9 @@
     <None Include="vars.section">
       <Filter>Resource Files\Examples</Filter>
     </None>
+    <None Include="smallerexample.pancakes">
+      <Filter>Resource Files\Examples</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="example.txt">
@@ -64,13 +64,5 @@
     <Text Include="smallerexample.cakes">
       <Filter>Resource Files\Examples</Filter>
     </Text>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="parser.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="later.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

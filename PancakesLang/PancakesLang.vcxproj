@@ -128,8 +128,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="parser.cpp" />
+    <ClCompile Include="main.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="block.forth" />
@@ -138,6 +137,7 @@
     <None Include="lowlevel.sub" />
     <None Include="manual.block" />
     <None Include="methods.section" />
+    <None Include="smallerexample.pancakes" />
     <None Include="struct.k" />
     <None Include="vars.section" />
   </ItemGroup>
@@ -146,10 +146,6 @@
     <Text Include="myownsyntax.txt" />
     <Text Include="smallerexample.cakes" />
     <Text Include="syntaxerrorexample.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="later.hpp" />
-    <ClInclude Include="parser.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
