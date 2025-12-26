@@ -197,14 +197,12 @@ public:
     {
         std::size_t count{ 0 };
         while (count < max)
-        {
             if (Token const t{ next() }; t.type != TokenType::UNKNOWN)
             {
                 target[count++] = t;
                 if (t.type == TokenType::END_OF_FILE)
                     break;
             }
-        }
         return count;
     }
 
@@ -371,9 +369,7 @@ public:
     bool run()
     {
         if (!validateStructure())
-        {
             return false;
-        }
 
         cursor = 0;
         while (!atEnd())
@@ -381,9 +377,7 @@ public:
             if (match(TokenType::K_PROCEDURE))
             {
                 if (peek().type == TokenType::IDENTIFIER)
-                {
                     consume();
-                }
                 if (match(TokenType::K_AS) && match(TokenType::K_MAIN))
                 {
                     executeMain();
@@ -478,13 +472,8 @@ private:
                     continue;
                 }
 
-                TokenType openType{ g_parseStack.back().openKind };
-                TokenType nextType{ (i + 1 < count) ? tokens[i + 1].type : TokenType::UNKNOWN };
-
-                if (nextType == openType)
-                {
+                if ((i + 1 < count ? tokens[i + 1].type : TokenType::UNKNOWN) == g_parseStack.back().openKind)
                     i += 2;
-                }
                 else
                 {
                     addError("Mismatched block closure", tok.position);
@@ -493,9 +482,7 @@ private:
                 g_parseStack.pop_back();
             }
             else
-            {
                 i++;
-            }
         }
 
         while (!g_parseStack.empty())
@@ -525,9 +512,7 @@ private:
 int main(int argc, char* argv[])
 {
     if (argc < 2)
-    {
         return 1;
-    }
 
     char const* filePath{ nullptr };
     for (int i{ 1 }; i < argc; ++i)
