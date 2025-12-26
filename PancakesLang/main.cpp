@@ -448,7 +448,8 @@ private:
         }
     }
 
-    [[nodiscard]] bool validateStructure() const {
+    [[nodiscard]] bool validateStructure() const 
+    {
         g_parseStack.clear();
         g_syntaxErrors.clear();
 
