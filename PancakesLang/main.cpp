@@ -532,9 +532,7 @@ int main(int argc, char* argv[])
 
     std::streamsize const sz{ in.tellg() };
     if (sz <= 0 || sz > static_cast<std::streamsize>(MAX_INPUT_SIZE))
-    {
         return 1;
-    }
 
     in.seekg(0);
     in.read(g_inputBuffer, sz);

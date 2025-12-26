@@ -1,4 +1,4 @@
-procedure foo as main 
+procedure foo as main is
 do
     print_line('hi')
 end procedure

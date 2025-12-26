@@ -1,0 +1,13 @@
+Token Type: <K_PROCEDURE> Word: "procedure" Position: { Line: 1, Column: 1 }
+Token Type: <IDENTIFIER> Word: "foo" Position: { Line: 1, Column: 11 }
+Token Type: <K_AS> Word: "as" Position: { Line: 1, Column: 15 }
+Token Type: <K_MAIN> Word: "main" Position: { Line: 1, Column: 18 }
+Token Type: <K_IS> Word: "is" Position: { Line: 1, Column: 23 }
+Token Type: <K_DO> Word: "do" Position: { Line: 2, Column: 1 }
+Token Type: <IDENTIFIER> Word: "print_line" Position: { Line: 3, Column: 5 }
+Token Type: <LPAREN> Word: "(" Position: { Line: 3, Column: 15 }
+Token Type: <STRING> Word: "hi" Position: { Line: 3, Column: 16 }
+Token Type: <RPAREN> Word: ")" Position: { Line: 3, Column: 20 }
+Token Type: <K_END> Word: "end" Position: { Line: 4, Column: 1 }
+Token Type: <K_PROCEDURE> Word: "procedure" Position: { Line: 4, Column: 5 }
+Token Type: <END_OF_FILE> Word: "" Position: { Line: 4, Column: 14 }
