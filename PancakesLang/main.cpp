@@ -531,7 +531,7 @@ int main(int argc, char* argv[])
     if (!in)
         return 1;
 
-    std::streamsize const sz{ in.tellg() };
+    std::streampos const sz{ in.tellg() };
     if (sz <= 0 || sz > static_cast<std::streamsize>(MAX_INPUT_SIZE))
         return 1;
 
