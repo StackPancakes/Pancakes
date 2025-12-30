@@ -128,6 +128,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="pancdef.hpp" />
+    <ClCompile Include="panclexer.cpp" />
+    <ClCompile Include="pancparser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="block.forth" />
@@ -147,7 +150,13 @@
     <Text Include="syntaxerrorexample.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="pancarray.hpp" />
+    <ClInclude Include="panclexer.hpp" />
+    <ClInclude Include="pancparser.hpp" />
     <ClInclude Include="pancstring.hpp" />
+    <ClInclude Include="panctoken.hpp" />
+    <ClInclude Include="pancutil.hpp" />
+    <ClInclude Include="pancvar.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

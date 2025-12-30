@@ -7,7 +7,7 @@ namespace panc
 {
     inline void strcpy(char* dst, std::size_t dstSize, char const* src)
     {
-        if (!dst || dstSize == 0) return;
+        if (!dst || !src || dstSize == 0) return;
 
         std::size_t i{ 0 };
         for (; i + 1 < dstSize && src[i] != '\0'; ++i)
@@ -18,7 +18,7 @@ namespace panc
 
     inline void strcat(char* dst, std::size_t dstSize, char const* src)
     {
-        if (!dst || dstSize == 0) return;
+        if (!dst || !src || dstSize == 0) return;
 
         std::size_t dstLen{ 0 };
         while (dstLen < dstSize - 1 && dst[dstLen] != '\0')
@@ -36,23 +36,12 @@ namespace panc
         if (!str) return nullptr;
 
         char* last{ nullptr };
-        for (char* p = str; *p != '\0'; ++p)
+        for (char* p{ str }; ; ++p)
         {
             if (*p == ch)
                 last = p;
-        }
-        return last;
-    }
-
-    inline char const* strrchr(char const* str, char ch)
-    {
-        if (!str) return nullptr;
-
-        char const* last{ nullptr };
-        for (char const* p = str; *p != '\0'; ++p)
-        {
-            if (*p == ch)
-                last = p;
+            if (*p == '\0')
+                break;
         }
         return last;
     }
