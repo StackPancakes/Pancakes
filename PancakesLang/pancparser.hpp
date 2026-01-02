@@ -4,6 +4,8 @@
 #include "panctoken.hpp"
 #include "pancutil.hpp"
 #include "pancvar.hpp"
+#include "pancarena.hpp"
+#include "pancexpr.hpp"
 #include <cstddef>
 
 class Parser
