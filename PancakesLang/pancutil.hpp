@@ -29,6 +29,39 @@ namespace panc
     {
         char message[256]{};
         SourceLocation errorLocation{};
+
+        SyntaxError() = default;
+
+        SyntaxError(char const* msg, int line, int column)
+            : errorLocation{ line, column }
+        {
+            size_t i = 0;
+            while (msg[i] != '\0' && i < sizeof(message) - 1)
+            {
+                message[i] = msg[i];
+                ++i;
+            }
+            message[i] = '\0';
+        }
+
+        SyntaxError& operator=(char const* msg)
+        {
+            size_t i = 0;
+            while (msg[i] != '\0' && i < sizeof(message) - 1)
+            {
+                message[i] = msg[i];
+                ++i;
+            }
+            message[i] = '\0';
+            return *this;
+        }
+
+        SyntaxError& operator= (SyntaxError temp)
+        {
+            *this = temp.message;
+            errorLocation = temp.errorLocation;
+            return *this;
+        }
     };
 }
 
