@@ -9,6 +9,8 @@ namespace panc
     constexpr std::size_t MAX_TOKENS{ 4096 };
     constexpr std::size_t MAX_SYNTAX_ERRORS{ 256 };
     constexpr std::size_t MAX_STACK_DEPTH{ 256 };
+    constexpr std::size_t MAX_FUNC_ARGS{ 16 };
+    constexpr std::size_t MAX_CAPACITY_SIZE{ 8192 };
 }
 
 #endif
