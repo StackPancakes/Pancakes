@@ -73,6 +73,9 @@
     <Text Include="smallerexample.cakes">
       <Filter>Resource Files\Examples</Filter>
     </Text>
+    <Text Include="pancakesgrammer.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pancstring.hpp">
@@ -94,6 +97,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="pancparser.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pancexpr.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pancarena.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

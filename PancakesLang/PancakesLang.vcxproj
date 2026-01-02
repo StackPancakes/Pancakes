@@ -146,11 +146,14 @@
   <ItemGroup>
     <Text Include="example.txt" />
     <Text Include="myownsyntax.txt" />
+    <Text Include="pancakesgrammer.txt" />
     <Text Include="smallerexample.cakes" />
     <Text Include="syntaxerrorexample.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="pancarena.hpp" />
     <ClInclude Include="pancarray.hpp" />
+    <ClInclude Include="pancexpr.hpp" />
     <ClInclude Include="panclexer.hpp" />
     <ClInclude Include="pancparser.hpp" />
     <ClInclude Include="pancstring.hpp" />
